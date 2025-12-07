@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate OEC Master Explorer</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #6c757d;
+            --background-color: #f4f7f9;
+            --text-color: #333;
+            --container-bg: #ffffff;
+            --border-color: #dce1e6;
+            --table-header-bg: #eef4fb;
+            --total-row-bg: #e9ecef;
+            --success-color: #5cb85c;
+            --danger-color: #d9534f;
+            --disabled-color: #ccc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .container {
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            padding: 2rem;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin: 0 0 1.5rem 0;
+        }
+
+        /* --- TAB SYSTEM --- */
+        .mode-tabs {
+            display: flex;
+            background-color: #eef4fb;
+            padding: 0.5rem;
+            border-radius: 8px;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .mode-tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .mode-tab:hover {
+            background-color: rgba(74, 144, 226, 0.1);
+        }
+
+        .mode-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* --- FORM CONTROLS --- */
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            align-items: end;
+        }
+        
+        .control-group { display: flex; flex-direction: column; }
+        .control-group.full-width { grid-column: 1 / -1; }
+        .control-group label { font-weight: 600; margin-bottom: 0.5rem; font-size: 0.9rem; }
+
+        .control-group input, .control-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        
+        .control-group input:focus, .control-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
+        }
+
+        /* Radio Group (From Country Explorer) */
+        .radio-group {
+            display: flex; gap: 1rem; background-color: #eef4fb;
+            padding: 0.5rem; border-radius: 6px;
+        }
+        .radio-group label {
+            flex: 1; text-align: center; padding: 0.5rem; border-radius: 4px;
+            cursor: pointer; transition: background-color 0.2s, color 0.2s;
+            font-weight: 500; margin: 0;
+        }
+        .radio-group input { display: none; }
+        .radio-group input:checked + label {
+            background-color: var(--primary-color); color: white;
+            font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* Buttons */
+        .action-btn {
+            grid-column: 1 / -1; padding: 0.8rem 1rem; font-size: 1.1rem;
+            font-weight: 600; color: white; background-color: var(--primary-color);
+            border: none; border-radius: 6px; cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        .action-btn:hover { background-color: #357abd; }
+        .action-btn:active { transform: scale(0.98); }
+        .action-btn:disabled { background-color: #9ac2ed; cursor: not-allowed; }
+
+        .max-btn {
+            padding: 0.75rem; font-size: 0.9rem; background-color: var(--secondary-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;
+        }
+        .max-btn:hover { background-color: #5a6268; }
+
+        .limit-group { display: flex; align-items: center; gap: 0.5rem; }
+        .limit-group input { flex-grow: 1; }
+
+        /* --- RESULTS AREA --- */
+        .results-section { display: none; margin-top: 0; }
+        .results-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .results-header h2 { margin: 0; font-size: 1.3rem; }
+        .results-actions { display: flex; align-items: center; gap: 1.5rem; }
+
+        .download-btn {
+            font-size: 0.9rem; padding: 0.5rem 1rem; background-color: var(--success-color);
+            color: white; border: none; border-radius: 6px; cursor: pointer;
+        }
+        .download-btn:hover { background-color: #4a9d4a; }
+
+        /* Toggle Switch */
+        .toggle-switch { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+        .toggle-switch input { height: 0; width: 0; visibility: hidden; }
+        .toggle-switch label {
+            cursor: pointer; text-indent: -9999px; width: 40px; height: 22px;
+            background: grey; display: block; border-radius: 100px; position: relative;
+        }
+        .toggle-switch label:after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 18px; height: 18px; background: #fff;
+            border-radius: 90px; transition: 0.3s;
+        }
+        .toggle-switch input:checked + label { background: var(--primary-color); }
+        .toggle-switch input:checked + label:after { left: calc(100% - 2px); transform: translateX(-100%); }
+
+        /* Loader & Error */
+        #loader { display: none; text-align: center; margin: 2rem auto; }
+        #loader-spinner {
+            width: 40px; height: 40px; border: 4px solid var(--border-color);
+            border-top-color: var(--primary-color); border-radius: 50%;
+            animation: spin 1s linear infinite; margin: 0 auto 0.5rem auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        #error {
+            display: none; padding: 1rem; background-color: #f8d7da; color: #721c24;
+            border: 1px solid #f5c6cb; border-radius: 6px; text-align: center; margin-bottom: 1rem;
+        }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; display: none; }
+        th, td { padding: 0.8rem 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+        thead th { background-color: var(--table-header-bg); font-weight: 600; }
+        tbody tr:nth-child(even) { background-color: #f9fafb; }
+        tbody tr:hover { background-color: #fafdff; }
+        .total-row { background-color: var(--total-row-bg) !important; font-weight: bold; }
+        
+        /* Pagination */
+        .pagination-controls {
+            display: none; justify-content: space-between; align-items: center;
+            margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);
+        }
+        .pagination-controls button {
+            padding: 0.5rem 1rem; font-size: 0.9rem; background-color: white; color: var(--primary-color);
+            border: 1px solid var(--primary-color); border-radius: 4px; cursor: pointer;
+        }
+        .pagination-controls button:hover { background-color: #f4f7f9; }
+        .pagination-controls button:disabled { background-color: #e9ecef; color: var(--disabled-color); border-color: var(--border-color); cursor: not-allowed; }
+        .pagination-controls div { display: flex; align-items: center; gap: 0.5rem; }
+
+        /* --- MODAL (Product Browser) --- */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 10% auto; padding: 20px;
+            border: 1px solid #888; width: 80%; max-width: 600px; border-radius: 8px;
+            display: flex; flex-direction: column;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-body { flex-grow: 1; max-height: 400px; overflow-y: auto; margin-top: 1rem; }
+        .modal-list { list-style: none; padding: 0; margin: 0; }
+        .modal-list li { padding: 0.5rem; cursor: pointer; border-radius: 4px; }
+        .modal-list li:hover { background-color: #f1f1f1; }
+        .close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; border: none; background: none; }
+        .close-btn:hover { color: black; }
+        #product-browser-search { width: 100%; box-sizing: border-box; margin-top: 1rem; padding: 0.5rem; font-size: 1rem; border: 1px solid var(--border-color); border-radius: 4px; }
+
+        /* Mobile */
+        @media (max-width: 768px) {
+            .controls { grid-template-columns: 1fr; }
+            .results-header { flex-direction: column; align-items: center; }
+            body { padding: 1rem; }
+            .container { padding: 1.5rem; }
+            .mode-tabs { flex-direction: column; gap: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <div class="container">
+            <h1>Ultimate OEC Explorer</h1>
+            
+            <div class="mode-tabs">
+                <div class="mode-tab active" id="tab-country" onclick="switchMode('country')">Explore a Country</div>
+                <div class="mode-tab" id="tab-product" onclick="switchMode('product')">Explore a Product</div>
+            </div>
+
+            <!-- COUNTRY EXPLORER CONTROLS -->
+            <div id="c-controls" class="controls">
+                <div class="control-group"> 
+                    <label for="c-country-input">Primary Country</label> 
+                    <input list="countries-datalist" id="c-country-input" placeholder="e.g., Germany"> 
+                </div>
+                
+                <div class="control-group"> 
+                    <label>Trade Flow</label> 
+                    <div class="radio-group"> 
+                        <input type="radio" id="c-flow-export" name="c-trade-flow" value="export" checked> 
+                        <label for="c-flow-export">Exports</label> 
+                        <input type="radio" id="c-flow-import" name="c-trade-flow" value="import"> 
+                        <label for="c-flow-import">Imports</label> 
+                    </div> 
+                </div>
+                
+                <div class="control-group"> 
+                    <label for="c-granularity-select">Product Detail Level</label> 
+                    <select id="c-granularity-select"> 
+                        <option value="HS2">HS2 (Broadest)</option> 
+                        <option value="HS4" selected>HS4 (Specific)</option> 
+                        <option value="HS6">HS6 (Most Detailed)</option> 
+                    </select> 
+                </div>
+                
+                <div class="control-group"> 
+                    <label for="c-year-select">Year</label> 
+                    <select id="c-year-select"></select> 
+                </div>
+                
+                <div class="control-group full-width"> 
+                    <label for="c-partner-input">Optional: Partner Country</label> 
+                    <input list="countries-datalist" id="c-partner-input" placeholder="e.g., France (leave blank for world total)"> 
+                </div>
+                
+                <div class="control-group full-width"> 
+                    <label for="c-limit-input">Number of Top Products</label> 
+                    <div class="limit-group"> 
+                        <input type="number" id="c-limit-input" value="10" min="1" placeholder="e.g., 10"> 
+                        <button id="c-max-btn" class="max-btn">Max</button> 
+                    </div> 
+                </div>
+                
+                <button id="c-get-data-btn" class="action-btn">Get Country Data</button>
+            </div>
+
+            <!-- PRODUCT EXPLORER CONTROLS -->
+            <div id="p-controls" class="controls" style="display: none;">
+                <div class="control-group full-width">
+                    <label>1. Select a Product</label>
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-end;">
+                        <div style="flex: 1 1 25%;">
+                            <label for="p-granularity-select" style="font-weight: normal; font-size: 0.8rem;">Detail Level</label>
+                            <select id="p-granularity-select">
+                                <option value="HS2">HS2 (Broad)</option>
+                                <option value="HS4" selected>HS4 (Specific)</option>
+                                <option value="HS6">HS6 (Detailed)</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1 1 75%;">
+                            <div id="p-product-search-wrapper" style="display: none;">
+                                <label for="p-primary-input" style="font-weight: normal; font-size: 0.8rem;">Product Name (type 3+ chars for hints)</label>
+                                <input list="products-datalist" id="p-primary-input" placeholder="e.g., Semiconductors...">
+                            </div>
+                            <button id="p-browse-products-btn" class="action-btn" style="background-color: var(--secondary-color);">Browse Products</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="p-extra-control">2. Show me the...</label>
+                    <select id="p-extra-control">
+                        <option value="exporters">Top Exporting Countries</option>
+                        <option value="importers">Top Importing Countries</option>
+                        <option value="flows">Top Trade Flows (Country to Country)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="p-year-select">3. For the Year...</label>
+                    <select id="p-year-select"></select>
+                </div>
+
+                <div class="control-group full-width">
+                    <label for="p-partner-input">4. Optional: With Partner Country</label>
+                    <input list="countries-datalist" id="p-partner-input" placeholder="e.g., China (leave blank for world total)">
+                </div>
+                
+                <div class="control-group full-width">
+                    <label for="p-limit-input">5. Number of Results</label>
+                    <div class="limit-group">
+                        <input type="number" id="p-limit-input" value="10" min="1" max="50000">
+                        <button id="p-max-btn" class="max-btn">Max</button>
+                    </div>
+                </div>
+                
+                <button id="p-get-data-btn" class="action-btn">Get Product Data</button>
+            </div>
+        </div>
+
+        <!-- SHARED RESULTS AREA -->
+        <div class="container results-section" id="results-area">
+            <div class="results-header">
+                <h2 id="results-title">Results</h2>
+                <div class="results-actions" id="results-actions">
+                    <div class="toggle-switch">
+                        <span>Full</span>
+                        <input type="checkbox" id="format-toggle"/>
+                        <label for="format-toggle">Toggle</label>
+                        <span>Short</span>
+                    </div>
+                    <button id="download-btn" class="download-btn">Download CSV</button>
+                </div>
+            </div>
+            
+            <div id="loader"><div id="loader-spinner"></div><span id="loader-text"></span></div>
+            <div id="error"></div>
+            
+            <table id="results-table">
+                <thead id="results-thead"></thead>
+                <tbody id="results-tbody"></tbody>
+            </table>
+            
+            <div class="pagination-controls" id="pagination-controls">
+                <div>
+                    <label for="rows-per-page">Rows:</label>
+                    <select id="rows-per-page">
+                        <option value="10">10</option><option value="20">20</option>
+                        <option value="50">50</option><option value="100">100</option>
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <div>
+                    <button id="prev-page-btn">Previous</button>
+                    <span id="page-info"></span>
+                    <button id="next-page-btn">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- DATALISTS & MODALS -->
+    <datalist id="countries-datalist"></datalist>
+    <datalist id="products-datalist"></datalist>
+    
+    <div id="product-browser-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="product-browser-title">Browse Products</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div id="product-browser-loader" style="display: none; text-align: center; padding: 1rem;">Fetching list...</div>
+            <input type="text" id="product-browser-search" placeholder="Filter list...">
+            <div class="modal-body">
+                <ul id="product-browser-list" class="modal-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COUNTRIES = [{"name":"Albania","id":"eualb"},{"name":"Algeria","id":"afdza"},{"name":"Angola","id":"afago"},{"name":"Afghanistan","id":"asafg"},{"name":"Armenia","id":"asarm"},{"name":"Australia","id":"ocaus"},{"name":"Austria","id":"euaut"},{"name":"Azerbaijan","id":"asaze"},{"name":"Bahrain","id":"asbhr"},{"name":"Bangladesh","id":"asbgd"},{"name":"Belarus","id":"eublr"},{"name":"Belgium","id":"eubel"},{"name":"Benin","id":"afben"},{"name":"Bhutan","id":"asbtn"},{"name":"Bolivia","id":"sabol"},{"name":"Bosnia and Herzegovina","id":"eubih"},{"name":"Botswana","id":"afbwa"},{"name":"Brazil","id":"sabra"},{"name":"Burkina Faso","id":"afbfa"},{"name":"Burundi","id":"afbdi"},{"name":"Cambodia","id":"askhm"},{"name":"Cameroon","id":"afcmr"},{"name":"Canada","id":"nacan"},{"name":"Central African Republic","id":"afcaf"},{"name":"Chad","id":"aftcd"},{"name":"Chile","id":"sachl"},{"name":"China","id":"aschn"},{"name":"Colombia","id":"sacol"},{"name":"Comoros","id":"afcom"},{"name":"Costa Rica","id":"nacri"},{"name":"Croatia","id":"euhrv"},{"name":"Cuba","id":"nacub"},{"name":"Cyprus","id":"eucyp"},{"name":"Czech Republic (Czechia)","id":"eucze"},{"name":"Denmark","id":"eudnk"},{"name":"Djibouti","id":"afdji"},{"name":"Dominican Republic","id":"nadom"},{"name":"DR Congo","id":"afcod"},{"name":"Ecuador","id":"saecu"},{"name":"Egypt","id":"afegy"},{"name":"El Salvador","id":"naslv"},{"name":"Equatorial Guinea","id":"afgnq"},{"name":"Eritrea","id":"aferi"},{"name":"Estonia","id":"euest"},{"name":"Eswatini (fmr. \"Swaziland\")","id":"afswz"},{"name":"Ethiopia","id":"afeth"},{"name":"Fiji","id":"ocfji"},{"name":"Finland","id":"eufin"},{"name":"France","id":"eufra"},{"name":"Gabon","id":"afgab"},{"name":"Gambia","id":"afgmb"},{"name":"Georgia","id":"asgeo"},{"name":"Germany","id":"eudeu"},{"name":"Ghana","id":"afgha"},{"name":"Greece","id":"eugrc"},{"name":"Guatemala","id":"nagtm"},{"name":"Guinea","id":"afgin"},{"name":"Guinea-Bissau","id":"afgnb"},{"name":"Guyana","id":"saguy"},{"name":"Haiti","id":"nahti"},{"name":"Honduras","id":"nahnd"},{"name":"Hong Kong","id":"ashkg"},{"name":"Hungary","id":"euhun"},{"name":"India","id":"asind"},{"name":"Indonesia","id":"asidn"},{"name":"Iran","id":"asirn"},{"name":"Iraq","id":"asirq"},{"name":"Ireland","id":"euirl"},{"name":"Israel","id":"asisr"},{"name":"Italy","id":"euita"},{"name":"Ivory Coast","id":"afciv"},{"name":"Jamaica","id":"najam"},{"name":"Japan","id":"asjpn"},{"name":"Jordan","id":"asjor"},{"name":"Kazakhstan","id":"askaz"},{"name":"Kenya","id":"afken"},{"name":"Kuwait","id":"askwt"},{"name":"Kyrgyzstan","id":"askgz"},{"name":"Laos","id":"aslao"},{"name":"Latvia","id":"eulva"},{"name":"Lebanon","id":"aslbn"},{"name":"Lesotho","id":"aflso"},{"name":"Liberia","id":"aflbr"},{"name":"Libya","id":"aflby"},{"name":"Lithuania","id":"eultu"},{"name":"Madagascar","id":"afmdg"},{"name":"Malawi","id":"afmwi"},{"name":"Malaysia","id":"asmys"},{"name":"Mali","id":"afmli"},{"name":"Mauritania","id":"afmrt"},{"name":"Mauritius","id":"afmus"},{"name":"Mexico","id":"namex"},{"name":"Moldova","id":"eumda"},{"name":"Mongolia","id":"asmng"},{"name":"Morocco","id":"afmar"},{"name":"Mozambique","id":"afmoz"},{"name":"Myanmar","id":"asmmr"},{"name":"Namibia","id":"afnam"},{"name":"Nepal","id":"asnpl"},{"name":"Netherlands","id":"eunld"},{"name":"New Zealand","id":"ocnzl"},{"name":"Nicaragua","id":"nanic"},{"name":"Niger","id":"afner"},{"name":"Nigeria","id":"afnga"},{"name":"North Korea","id":"askpr"},{"name":"North Macedonia","id":"eumkd"},{"name":"Norway","id":"eunor"},{"name":"Oman","id":"asomn"},{"name":"Pakistan","id":"aspak"},{"name":"Panama","id":"napan"},{"name":"Papua New Guinea","id":"ocpng"},{"name":"Paraguay","id":"sapry"},{"name":"Peru","id":"saper"},{"name":"Philippines","id":"asphl"},{"name":"Poland","id":"eupol"},{"name":"Portugal","id":"euprt"},{"name":"Puerto Rico","id":"napri"},{"name":"Qatar","id":"asqat"},{"name":"Republic of the Congo","id":"afcog"},{"name":"Romania","id":"eurou"},{"name":"Russia","id":"eurus"},{"name":"Rwanda","id":"afrwa"},{"name":"Saudi Arabia","id":"assau"},{"name":"Senegal","id":"afsen"},{"name":"Sierra Leone","id":"afsle"},{"name":"Singapore","id":"assgp"},{"name":"Slovenia","id":"eusvn"},{"name":"Solomon Islands","id":"ocslb"},{"name":"Somalia","id":"afsom"},{"name":"South Africa","id":"afzaf"},{"name":"South Korea","id":"askor"},{"name":"South Sudan","id":"afssd"},{"name":"Spain","id":"euesp"},{"name":"Sri Lanka","id":"aslka"},{"name":"State of Palestine","id":"aspse"},{"name":"Sudan","id":"afsdn"},{"name":"Sweden","id":"euswe"},{"name":"Switzerland","id":"euefta"},{"name":"Syria","id":"assyr"},{"name":"Taiwan","id":"astwn"},{"name":"Tajikistan","id":"astjk"},{"name":"Tanzania","id":"aftza"},{"name":"Thailand","id":"astha"},{"name":"Timor-Leste","id":"astls"},{"name":"Togo","id":"aftgo"},{"name":"Trinidad and Tobago","id":"natto"},{"name":"Tunisia","id":"aftun"},{"name":"Turkey","id":"astur"},{"name":"Turkmenistan","id":"astkm"},{"name":"Uganda","id":"afuga"},{"name":"Ukraine","id":"euukr"},{"name":"United Arab Emirates","id":"asare"},{"name":"United Kingdom","id":"eugbr"},{"name":"United States","id":"nausa"},{"name":"Uruguay","id":"saury"},{"name":"Uzbekistan","id":"asuzb"},{"name":"Vietnam","id":"asvnm"},{"name":"Yemen","id":"asyem"},{"name":"Zambia","id":"afzmb"},{"name":"Zimbabwe","id":"afzwe"}];
+
+        // --- GLOBAL STATE ---
+        let state = {
+            mode: 'country', // 'country' or 'product'
+            currentData: [],
+            currentPage: 1,
+            rowsPerPage: 10,
+            isAbbreviated: false,
+            // Product Specific
+            productCache: { HS2: null, HS4: null },
+            selectedProduct: null,
+            abortController: null
+        };
+
+        // --- DOM REFERENCES ---
+        const ui = {
+            countryDatalist: document.getElementById('countries-datalist'),
+            productsDatalist: document.getElementById('products-datalist'),
+            loader: document.getElementById('loader'),
+            loaderText: document.getElementById('loader-text'),
+            errorDiv: document.getElementById('error'),
+            resultsSection: document.getElementById('results-area'),
+            resultsTitle: document.getElementById('results-title'),
+            resultsTable: document.getElementById('results-table'),
+            resultsThead: document.getElementById('results-thead'),
+            resultsTbody: document.getElementById('results-tbody'),
+            resultsActions: document.getElementById('results-actions'),
+            paginationControls: document.getElementById('pagination-controls'),
+            pageInfo: document.getElementById('page-info'),
+            
+            // Shared Controls
+            formatToggle: document.getElementById('format-toggle'),
+            downloadBtn: document.getElementById('download-btn'),
+            rowsPerPageSelect: document.getElementById('rows-per-page'),
+            prevPageBtn: document.getElementById('prev-page-btn'),
+            nextPageBtn: document.getElementById('next-page-btn'),
+
+            // Country Mode
+            c: {
+                container: document.getElementById('c-controls'),
+                primaryInput: document.getElementById('c-country-input'),
+                partnerInput: document.getElementById('c-partner-input'),
+                granularitySelect: document.getElementById('c-granularity-select'),
+                yearSelect: document.getElementById('c-year-select'),
+                limitInput: document.getElementById('c-limit-input'),
+                maxBtn: document.getElementById('c-max-btn'),
+                getDataBtn: document.getElementById('c-get-data-btn'),
+            },
+
+            // Product Mode
+            p: {
+                container: document.getElementById('p-controls'),
+                primaryInput: document.getElementById('p-primary-input'),
+                searchWrapper: document.getElementById('p-product-search-wrapper'),
+                partnerInput: document.getElementById('p-partner-input'),
+                granularitySelect: document.getElementById('p-granularity-select'),
+                yearSelect: document.getElementById('p-year-select'),
+                limitInput: document.getElementById('p-limit-input'),
+                maxBtn: document.getElementById('p-max-btn'),
+                getDataBtn: document.getElementById('p-get-data-btn'),
+                browseBtn: document.getElementById('p-browse-products-btn'),
+                extraControl: document.getElementById('p-extra-control'),
+                modal: document.getElementById('product-browser-modal'),
+                modalTitle: document.getElementById('product-browser-title'),
+                modalLoader: document.getElementById('product-browser-loader'),
+                modalSearch: document.getElementById('product-browser-search'),
+                modalList: document.getElementById('product-browser-list'),
+                modalClose: document.querySelector('.close-btn')
+            }
+        };
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Populate Countries
+            const countryOptions = COUNTRIES.map(c => `<option value="${c.name}"></option>`).join('');
+            ui.countryDatalist.innerHTML = countryOptions;
+
+            // Populate Years
+            const yearOptions = getYearOptions();
+            ui.c.yearSelect.innerHTML = yearOptions;
+            ui.p.yearSelect.innerHTML = yearOptions;
+
+            setupEventListeners();
+        }
+
+        function getYearOptions() {
+            let options = '<option value="latest">Latest</option>';
+            const year = new Date().getFullYear();
+            for (let i = year; i >= 1995; i--) options += `<option value="${i}">${i}</option>`;
+            return options;
+        }
+
+        // --- MODE SWITCHING ---
+        window.switchMode = function(mode) {
+            state.mode = mode;
+            state.currentData = []; // Clear data on switch
+            resetUI();
+
+            document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+
+            if (mode === 'country') {
+                ui.c.container.style.display = 'grid';
+                ui.p.container.style.display = 'none';
+            } else {
+                ui.c.container.style.display = 'none';
+                ui.p.container.style.display = 'grid';
+                handleProductGranularityChange(); // Init UI state for product
+            }
+        };
+
+        // --- EVENT LISTENERS ---
+        function setupEventListeners() {
+            // SHARED
+            ui.formatToggle.addEventListener('change', e => { state.isAbbreviated = e.target.checked; if(state.currentData.length) displayCurrentPage(); });
+            ui.rowsPerPageSelect.addEventListener('change', e => {
+                state.rowsPerPage = e.target.value === 'all' ? state.currentData.length : parseInt(e.target.value, 10);
+                state.currentPage = 1;
+                displayCurrentPage();
+            });
+            ui.prevPageBtn.addEventListener('click', () => { if (state.currentPage > 1) { state.currentPage--; displayCurrentPage(); } });
+            ui.nextPageBtn.addEventListener('click', () => {
+                const totalPages = Math.ceil(state.currentData.length / state.rowsPerPage);
+                if (state.currentPage < totalPages) { state.currentPage++; displayCurrentPage(); }
+            });
+            ui.downloadBtn.addEventListener('click', () => {
+                if (state.mode === 'country') downloadCountryCSV();
+                else downloadProductCSV();
+            });
+
+            // COUNTRY MODE
+            ui.c.getDataBtn.addEventListener('click', fetchCountryData);
+            ui.c.maxBtn.addEventListener('click', () => { ui.c.limitInput.value = 999999; });
+
+            // PRODUCT MODE
+            ui.p.getDataBtn.addEventListener('click', fetchProductData);
+            ui.p.maxBtn.addEventListener('click', () => { ui.p.limitInput.value = 50000; });
+            ui.p.primaryInput.addEventListener('input', handleProductAutocomplete);
+            ui.p.browseBtn.addEventListener('click', openProductBrowser);
+            ui.p.granularitySelect.addEventListener('change', handleProductGranularityChange);
+            ui.p.modalClose.addEventListener('click', () => ui.p.modal.style.display = 'none');
+            window.addEventListener('click', e => { if (e.target == ui.p.modal) ui.p.modal.style.display = 'none'; });
+            ui.p.modalSearch.addEventListener('input', () => {
+                const filter = ui.p.modalSearch.value.toLowerCase();
+                const items = ui.p.modalList.getElementsByTagName('li');
+                Array.from(items).forEach(item => {
+                    item.style.display = item.textContent.toLowerCase().includes(filter) ? '' : 'none';
+                });
+            });
+        }
+
+        // ==========================================
+        //         COUNTRY MODE LOGIC
+        // ==========================================
+
+        async function fetchCountryData() {
+            resetUI();
+            const primaryCountry = COUNTRIES.find(c => c.name.toLowerCase() === ui.c.primaryInput.value.toLowerCase());
+            if (!primaryCountry) { showError("Please select a valid Primary Country."); return; }
+            
+            let partnerCountry = null;
+            if (ui.c.partnerInput.value) {
+                partnerCountry = COUNTRIES.find(c => c.name.toLowerCase() === ui.c.partnerInput.value.toLowerCase());
+                if (!partnerCountry) { showError("Invalid Partner Country."); return; }
+            }
+
+            showLoader(true);
+            ui.c.getDataBtn.disabled = true;
+            
+            // Set Title
+            const flow = document.querySelector('input[name="c-trade-flow"]:checked').value;
+            const flowText = flow === 'export' ? 'Exports' : 'Imports';
+            let title = `Top ${flowText} for ${primaryCountry.name}`;
+            if (partnerCountry) title += ` ${flow === 'export' ? 'to' : 'from'} ${partnerCountry.name}`;
+            else title += ' (World Total)';
+            ui.resultsTitle.textContent = title;
+
+            // Prepare Headers
+            const granularity = ui.c.granularitySelect.value;
+            ui.resultsThead.innerHTML = `<tr><th>Rank</th><th>Product (${granularity})</th><th>Trade Value (USD)</th></tr>`;
+
+            try {
+                const limit = parseInt(ui.c.limitInput.value, 10);
+                const useMax = limit > 5000;
+                
+                const params = { primaryCountry, partnerCountry, flow, granularity, limit, year: ui.c.yearSelect.value };
+
+                if (useMax) state.currentData = await fetchCountryBatched(params);
+                else state.currentData = await fetchCountrySingle(params, limit, 0);
+                
+                renderResults();
+            } catch (err) {
+                showError(`Failed to fetch data: ${err.message}`);
+            } finally {
+                showLoader(false);
+                ui.c.getDataBtn.disabled = false;
+            }
+        }
+
+        function buildCountryApiUrl(p, limit, offset) {
+            const base = "https://api-v2.oec.world/tesseract/data.jsonrecords";
+            const cube = "trade_i_baci_a_22";
+            
+            let drilldowns;
+            if (p.partnerCountry) drilldowns = `${p.granularity},Exporter+Country,Importer+Country`;
+            else {
+                const primaryRole = p.flow === 'export' ? 'Exporter+Country' : 'Importer+Country';
+                drilldowns = `${p.granularity},${primaryRole}`;
+            }
+
+            let includeParams = "";
+            if (p.flow === 'export') {
+                includeParams = `Exporter+Country:${p.primaryCountry.id}`;
+                if (p.partnerCountry) includeParams += `;Importer+Country:${p.partnerCountry.id}`;
+            } else {
+                includeParams = `Importer+Country:${p.primaryCountry.id}`;
+                if (p.partnerCountry) includeParams += `;Exporter+Country:${p.partnerCountry.id}`;
+            }
+
+            let timeParam = (p.year === 'latest') ? "&time=Year.latest" : `;Year:${p.year}`;
+            if (p.year !== 'latest') includeParams += timeParam;
+
+            return `${base}?cube=${cube}&drilldowns=${drilldowns}&measures=Trade+Value&include=${includeParams}${(p.year === 'latest' ? timeParam : '')}&sort=Trade+Value.desc&limit=${limit}&offset=${offset}`;
+        }
+
+        async function fetchCountrySingle(params, limit, offset) {
+            const url = buildCountryApiUrl(params, limit, offset);
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`API Error: ${response.status}`);
+            return (await response.json()).data;
+        }
+
+        async function fetchCountryBatched(params) {
+            const initialUrl = buildCountryApiUrl(params, 1, 0);
+            const initialResult = await (await fetch(initialUrl)).json();
+            const totalRecords = initialResult.page.total;
+            if (totalRecords === 0) return [];
+
+            let allData = [];
+            const batchSize = 5000;
+            const numBatches = Math.ceil(totalRecords / batchSize);
+
+            for (let i = 0; i < numBatches; i++) {
+                ui.loaderText.textContent = `Fetching batch ${i + 1} of ${numBatches}...`;
+                const batchData = await fetchCountrySingle(params, batchSize, i * batchSize);
+                allData.push(...batchData);
+                if (i < numBatches - 1) await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            return allData;
+        }
+
+        function downloadCountryCSV() {
+            if (!state.currentData.length) return;
+            const granularity = ui.c.granularitySelect.value;
+            let csvContent = `Rank,Product (${granularity}),Trade Value (USD)\n`;
+            
+            const totalValue = state.currentData.reduce((sum, item) => sum + (item['Trade Value'] || 0), 0);
+            csvContent += `Total,"",${totalValue}\n`;
+            
+            state.currentData.forEach((item, index) => {
+                const product = `"${item[granularity] || 'N/A'}"`;
+                csvContent += `${index + 1},${product},${item['Trade Value'] || 0}\n`;
+            });
+            
+            triggerDownload(csvContent, "Country_Data.csv");
+        }
+
+
+        // ==========================================
+        //         PRODUCT MODE LOGIC
+        // ==========================================
+
+        function handleProductGranularityChange() {
+            const granularity = ui.p.granularitySelect.value;
+            // Clear selections
+            ui.p.primaryInput.value = '';
+            ui.productsDatalist.innerHTML = '';
+            state.selectedProduct = null;
+            ui.p.browseBtn.textContent = 'Browse Products';
+            ui.p.browseBtn.style.backgroundColor = 'var(--secondary-color)';
+
+            if (granularity === 'HS6') {
+                ui.p.searchWrapper.style.display = 'block';
+                ui.p.browseBtn.style.display = 'none';
+            } else { // HS2 or HS4
+                ui.p.searchWrapper.style.display = 'none';
+                ui.p.browseBtn.style.display = 'block';
+            }
+        }
+
+        async function handleProductAutocomplete(e) {
+            const query = e.target.value;
+            if (query.length < 3) { ui.productsDatalist.innerHTML = ''; return; }
+            if (state.abortController) state.abortController.abort();
+            state.abortController = new AbortController();
+            
+            try {
+                const granularity = ui.p.granularitySelect.value;
+                const url = `https://api-v2.oec.world/tesseract/members?cube=trade_i_baci_a_22&level=${granularity}&search=${encodeURIComponent(query)}`;
+                const response = await fetch(url, { signal: state.abortController.signal });
+                const result = await response.json();
+                ui.productsDatalist.innerHTML = result.members.map(p => `<option value="${p.caption}" data-id="${p.key}"></option>`).join('');
+            } catch (err) { if (err.name !== 'AbortError') console.error(err); }
+        }
+
+        async function openProductBrowser() {
+            const granularity = ui.p.granularitySelect.value;
+            ui.p.modalTitle.textContent = `Browse ${granularity} Products`;
+            ui.p.modal.style.display = 'block';
+            ui.p.modalList.innerHTML = '';
+            ui.p.modalSearch.value = '';
+
+            if (state.productCache[granularity]) {
+                populateProductBrowser(state.productCache[granularity]);
+            } else {
+                ui.p.modalLoader.style.display = 'block';
+                try {
+                    const url = `https://api-v2.oec.world/tesseract/members?cube=trade_i_baci_a_22&level=${granularity}`;
+                    const response = await fetch(url);
+                    const result = await response.json();
+                    result.members.sort((a, b) => a.caption.localeCompare(b.caption));
+                    state.productCache[granularity] = result.members;
+                    populateProductBrowser(result.members);
+                } catch (err) {
+                    alert("API Error"); ui.p.modal.style.display = 'none';
+                } finally { ui.p.modalLoader.style.display = 'none'; }
+            }
+        }
+
+        function populateProductBrowser(products) {
+            ui.p.modalList.innerHTML = products.map(p => `<li data-id="${p.key}" data-name="${p.caption}">${p.caption}</li>`).join('');
+            ui.p.modalList.querySelectorAll('li').forEach(item => {
+                item.addEventListener('click', () => {
+                    state.selectedProduct = { id: item.dataset.id, name: item.dataset.name };
+                    ui.p.browseBtn.textContent = `Selected: ${state.selectedProduct.name.substring(0,20)}...`;
+                    ui.p.browseBtn.style.backgroundColor = 'var(--success-color)';
+                    ui.p.modal.style.display = 'none';
+                });
+            });
+        }
+
+        function getProductFormValues() {
+            const vals = {
+                limit: parseInt(ui.p.limitInput.value, 10),
+                granularity: ui.p.granularitySelect.value,
+                extraControl: ui.p.extraControl.value,
+                year: ui.p.yearSelect.value,
+            };
+            if (vals.granularity === 'HS6') {
+                const opt = Array.from(ui.productsDatalist.options).find(o => o.value === ui.p.primaryInput.value);
+                vals.product = opt ? { id: opt.dataset.id, name: opt.value } : null;
+            } else {
+                vals.product = state.selectedProduct;
+            }
+            if (ui.p.partnerInput.value) {
+                vals.partnerCountry = COUNTRIES.find(c => c.name.toLowerCase() === ui.p.partnerInput.value.toLowerCase());
+            }
+            return vals;
+        }
+
+        async function fetchProductData() {
+            resetUI();
+            const vals = getProductFormValues();
+            if (!vals.product || !vals.product.id) { showError("Please select a valid product."); return; }
+            if (vals.partnerCountry === undefined && ui.p.partnerInput.value) { showError("Invalid Partner Country."); return; }
+
+            showLoader(true);
+            ui.p.getDataBtn.disabled = true;
+
+            // Titles
+            const showTextMap = {exporters: 'Top Exporting Countries', importers: 'Top Importing Countries', flows: 'Top Trade Flows'};
+            let title = `${showTextMap[vals.extraControl]} for <strong>${vals.product.name}</strong>`;
+            if (vals.partnerCountry) title += ` with <strong>${vals.partnerCountry.name}</strong>`;
+            title += ` (${vals.year})`;
+            ui.resultsTitle.innerHTML = title;
+
+            // Headers
+            let headers = '<tr><th>Rank</th>';
+            if (vals.extraControl === 'flows') headers += '<th>Exporter</th><th>Importer</th>';
+            else headers += '<th>Country</th>';
+            headers += '<th>Trade Value (USD)</th></tr>';
+            ui.resultsThead.innerHTML = headers;
+
+            try {
+                const useMax = vals.limit >= 50000;
+                if (useMax) state.currentData = await fetchProductBatched(vals);
+                else state.currentData = await fetchProductSingle(vals, vals.limit, 0);
+                renderResults();
+            } catch (err) { showError(`Error: ${err.message}`); }
+            finally { showLoader(false); ui.p.getDataBtn.disabled = false; }
+        }
+
+        function buildProductApiUrl(v, limit, offset) {
+            const base = "https://api-v2.oec.world/tesseract/data.jsonrecords";
+            const cube = "trade_i_baci_a_22";
+            
+            let drilldowns = v.extraControl === 'flows' ? `Exporter+Country,Importer+Country` : 
+                             v.extraControl === 'exporters' ? 'Exporter+Country' : 'Importer+Country';
+            
+            let includeParams = [`${v.granularity}:${v.product.id}`];
+            if (v.partnerCountry) {
+                const role = v.extraControl === 'exporters' ? 'Importer+Country' : 'Exporter+Country';
+                includeParams.push(`${role}:${v.partnerCountry.id}`);
+            }
+            if (v.year !== 'latest') includeParams.push(`Year:${v.year}`);
+            
+            return `${base}?cube=${cube}&drilldowns=${drilldowns}&measures=Trade+Value&include=${includeParams.join(';')}${(v.year === 'latest' ? "&time=Year.latest" : "")}&sort=Trade+Value.desc&limit=${limit}&offset=${offset}`;
+        }
+
+        async function fetchProductSingle(v, limit, offset) {
+            const response = await fetch(buildProductApiUrl(v, limit, offset));
+            if (!response.ok) throw new Error(response.status);
+            return (await response.json()).data;
+        }
+
+        async function fetchProductBatched(v) {
+            const initRes = await fetchProductSingle(v, 1, 0); // Hack to get count is not easy on this API without valid response, assuming similar logic or just max limit
+            // Actually, for product max, logic is same. Fetch count first.
+             const url = buildProductApiUrl(v, 1, 0);
+             const r = await (await fetch(url)).json();
+             const total = r.page.total;
+             if(total === 0) return [];
+             
+             let all = [];
+             const batch = 5000;
+             const batches = Math.ceil(total / batch);
+             for(let i=0; i<batches; i++) {
+                 ui.loaderText.textContent = `Batch ${i+1}/${batches}`;
+                 all.push(...await fetchProductSingle(v, batch, i*batch));
+                 if(i < batches-1) await new Promise(r => setTimeout(r, 300));
+             }
+             return all;
+        }
+
+        function downloadProductCSV() {
+            if (!state.currentData.length) return;
+            const vals = getProductFormValues();
+            const headers = Array.from(ui.resultsThead.rows[0].cells).map(th => `"${th.textContent}"`).join(',');
+            let csv = headers + '\n';
+            
+            const total = state.currentData.reduce((s, i) => s + (i['Trade Value']||0), 0);
+            const pad = vals.extraControl === 'flows' ? ',"",""' : ',""';
+            csv += `Total${pad},${total}\n`;
+
+            state.currentData.forEach((item, idx) => {
+                let row = [idx + 1];
+                if (vals.extraControl === 'flows') row.push(`"${item['Exporter Country']||'N/A'}"`, `"${item['Importer Country']||'N/A'}"`);
+                else row.push(`"${item['Exporter Country']||item['Importer Country']||'N/A'}"`);
+                row.push(item['Trade Value'] || 0);
+                csv += row.join(',') + '\n';
+            });
+            triggerDownload(csv, "Product_Data.csv");
+        }
+
+        // ==========================================
+        //         SHARED UTILS
+        // ==========================================
+
+        function renderResults() {
+            if (!state.currentData || state.currentData.length === 0) { showError("No data found."); return; }
+            ui.resultsSection.style.display = 'block';
+            ui.resultsTable.style.display = 'table';
+            
+            state.rowsPerPage = parseInt(ui.rowsPerPageSelect.value, 10) || state.currentData.length;
+            state.currentPage = 1;
+            displayCurrentPage();
+        }
+
+        function displayCurrentPage() {
+            ui.resultsTbody.innerHTML = '';
+            const totalValue = state.currentData.reduce((sum, item) => sum + (item['Trade Value'] || 0), 0);
+            
+            // Render Total Row
+            const colCount = ui.resultsThead.rows[0].cells.length;
+            const totalRow = ui.resultsTbody.insertRow();
+            totalRow.className = 'total-row';
+            totalRow.innerHTML = `<td colspan="${colCount-1}">Total</td><td>${formatNumber(totalValue)}</td>`;
+
+            const start = (state.currentPage - 1) * state.rowsPerPage;
+            const end = state.rowsPerPage === state.currentData.length ? state.currentData.length : start + state.rowsPerPage;
+            const pageData = state.currentData.slice(start, end);
+
+            pageData.forEach((item, index) => {
+                const row = ui.resultsTbody.insertRow();
+                let cells = `<td>${start + index + 1}</td>`;
+                
+                if (state.mode === 'country') {
+                    const gran = ui.c.granularitySelect.value;
+                    cells += `<td>${item[gran] || 'N/A'}</td>`;
+                } else {
+                    // Product mode logic
+                    const extra = ui.p.extraControl.value;
+                    if (extra === 'flows') cells += `<td>${item['Exporter Country']||'N/A'}</td><td>${item['Importer Country']||'N/A'}</td>`;
+                    else cells += `<td>${item['Exporter Country'] || item['Importer Country'] || 'N/A'}</td>`;
+                }
+                
+                cells += `<td>${formatNumber(item['Trade Value'])}</td>`;
+                row.innerHTML = cells;
+            });
+            updatePagination();
+        }
+
+        function updatePagination() {
+            if (state.currentData.length <= 10 && ui.rowsPerPageSelect.value === '10') {
+                ui.paginationControls.style.display = 'none'; return;
+            }
+            ui.paginationControls.style.display = 'flex';
+            const totalPages = Math.ceil(state.currentData.length / state.rowsPerPage);
+            ui.pageInfo.textContent = `Page ${state.currentPage} of ${totalPages}`;
+            ui.prevPageBtn.disabled = state.currentPage === 1;
+            ui.nextPageBtn.disabled = state.currentPage === totalPages;
+        }
+
+        function formatNumber(value) {
+            if (typeof value !== 'number') return 'N/A';
+            if (!state.isAbbreviated) return value.toLocaleString('en-US');
+            if (Math.abs(value) >= 1e12) return (value / 1e12).toFixed(2) + 'T';
+            if (Math.abs(value) >= 1e9) return (value / 1e9).toFixed(2) + 'B';
+            if (Math.abs(value) >= 1e6) return (value / 1e6).toFixed(2) + 'M';
+            return value.toLocaleString('en-US');
+        }
+
+        function triggerDownload(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function resetUI() {
+            ui.errorDiv.style.display = 'none';
+            ui.resultsSection.style.display = 'none';
+            ui.loader.style.display = 'none';
+            ui.resultsTbody.innerHTML = '';
+        }
+
+        function showLoader(show) {
+            ui.resultsSection.style.display = 'block';
+            ui.loader.style.display = show ? 'block' : 'none';
+            ui.resultsTable.style.display = show ? 'none' : 'table';
+            if(show) ui.resultsActions.style.display = 'none';
+            else ui.resultsActions.style.display = 'flex';
+        }
+
+        function showError(msg) {
+            resetUI();
+            ui.resultsSection.style.display = 'block';
+            ui.errorDiv.textContent = msg;
+            ui.errorDiv.style.display = 'block';
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
